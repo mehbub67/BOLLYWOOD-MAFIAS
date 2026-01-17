@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
 <title>BOLLYWOOD MAFIA</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
-body{background:#000;color:#fff;overflow:hidden}
+body{background:#000;overflow:hidden;color:#fff}
 
-/* Screens */
+/* SCREENS */
 .screen{position:absolute;inset:0;display:none}
 .screen.active{display:flex}
 
@@ -21,7 +20,7 @@ body{background:#000;color:#fff;overflow:hidden}
   align-items:center;
 }
 .menu-box{
-  background:rgba(0,0,0,.7);
+  background:rgba(0,0,0,.75);
   padding:20px;
   border-radius:16px;
   width:90%;
@@ -30,8 +29,8 @@ body{background:#000;color:#fff;overflow:hidden}
 }
 .menu-btn{
   width:100%;
-  padding:15px;
-  margin-top:12px;
+  padding:14px;
+  margin-top:10px;
   font-size:18px;
   border-radius:12px;
   border:none;
@@ -39,34 +38,49 @@ body{background:#000;color:#fff;overflow:hidden}
   color:#fff;
 }
 
-/* GAME */
+/* GAME WORLD */
 #game{background:#111}
+#world{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  width:360px;
+  height:100%;
+}
+
+/* ROAD */
 #road{
   position:absolute;
-  left:30%;
-  width:40%;
+  left:80px;
+  width:200px;
   height:100%;
-  background:url('road/road_city.png') center/cover no-repeat;
+  background:url('road/road_city.png') repeat-y center/contain;
 }
 
 /* ENTITIES */
 .car{
   position:absolute;
-  width:50px;height:90px;
+  width:48px;
+  height:90px;
   background-size:contain;
   background-repeat:no-repeat;
 }
 .human{
   position:absolute;
-  width:40px;height:40px;
+  width:36px;
+  height:36px;
   background:url('humans/npc_human.png') center/contain no-repeat;
 }
-#player{bottom:90px}
+
+/* PLAYER */
+#player{bottom:100px}
 
 /* HUD */
 #hud{
   position:absolute;
-  top:10px;left:10px;right:10px;
+  top:8px;
+  left:8px;
+  right:8px;
   display:flex;
   justify-content:space-between;
   font-size:14px;
@@ -76,7 +90,7 @@ body{background:#000;color:#fff;overflow:hidden}
 /* MISSION */
 #mission{
   position:absolute;
-  top:40px;
+  top:36px;
   left:50%;
   transform:translateX(-50%);
   background:rgba(0,0,0,.6);
@@ -88,20 +102,25 @@ body{background:#000;color:#fff;overflow:hidden}
 /* CONTROLS */
 #controls{
   position:absolute;
-  bottom:0;left:0;right:0;
+  bottom:0;
+  left:0;
+  right:0;
+  height:110px;
   display:flex;
   justify-content:space-around;
-  padding:10px;
+  align-items:center;
   background:linear-gradient(#222,#000);
 }
 .ctrl{
-  width:80px;height:80px;
+  width:72px;
+  height:72px;
   border-radius:50%;
   background:radial-gradient(circle,#555,#111);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:26px;
+  font-size:24px;
+  touch-action:none;
 }
 #nitro{
   background:radial-gradient(circle,#ffd700,#b8860b);
@@ -111,10 +130,15 @@ body{background:#000;color:#fff;overflow:hidden}
 /* PAUSE */
 #pause{
   position:absolute;
-  top:60px;right:10px;
-  width:50px;height:50px;
-  background:#333;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
+  top:60px;
+  right:10px;
+  width:48px;
+  height:48px;
+  background:#333;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 </style>
 </head>
@@ -122,7 +146,6 @@ body{background:#000;color:#fff;overflow:hidden}
 <body>
 
 <!-- AUDIO -->
-<audio id="menuMusic" src="sounds/menu_music.mp3" loop></audio>
 <audio id="engineSound" src="sounds/engine.mp3" loop></audio>
 <audio id="nitroSound" src="sounds/nitro.mp3"></audio>
 <audio id="crashSound" src="sounds/crash.mp3"></audio>
@@ -130,9 +153,9 @@ body{background:#000;color:#fff;overflow:hidden}
 <!-- MENU -->
 <div id="menu" class="screen active">
   <div class="menu-box">
-    <h1>2D MAFIA</h1>
+    <h1>BOLLYWOOD MAFIA</h1>
     <p>Coins: <span id="mCoins">0</span></p>
-    <p>Best Score: <span id="best">0</span></p>
+    <p>Best: <span id="best">0</span></p>
     <p>Mission: <span id="lastMission">None</span></p>
     <button class="menu-btn" onclick="startGame()">START</button>
   </div>
@@ -140,8 +163,10 @@ body{background:#000;color:#fff;overflow:hidden}
 
 <!-- GAME -->
 <div id="game" class="screen">
-  <div id="road"></div>
-  <div id="player" class="car"></div>
+  <div id="world">
+    <div id="road"></div>
+    <div id="player" class="car"></div>
+  </div>
 
   <div id="hud">
     <div>HP: <span id="hp">100</span></div>
@@ -150,13 +175,12 @@ body{background:#000;color:#fff;overflow:hidden}
   </div>
 
   <div id="mission"></div>
-
-  <div id="pause" onclick="togglePause()">⏸</div>
+  <div id="pause">⏸</div>
 
   <div id="controls">
-    <div class="ctrl" ontouchstart="move(-40)">◀</div>
-    <div class="ctrl" id="nitro" ontouchstart="useNitro()">N</div>
-    <div class="ctrl" ontouchstart="move(40)">▶</div>
+    <div class="ctrl" id="leftBtn">◀</div>
+    <div class="ctrl" id="nitro">N</div>
+    <div class="ctrl" id="rightBtn">▶</div>
   </div>
 </div>
 
@@ -172,71 +196,77 @@ best.textContent=best;
 lastMission.textContent=lastMission;
 
 /* GAME STATE */
-let x=window.innerWidth/2;
-let score=0,hp=100,wanted=0;
-let paused=false,run=false;
+let roadLeft=80;
+let roadRight=80+200-48;
+let x=roadLeft+80;
+let hp=100,score=0,wanted=0;
+let run=false;
 let npcs=[],humans=[],police=[];
 let missionText="";
 
-/* AUDIO */
-const menuMusic=document.getElementById("menuMusic");
-const engineSound=document.getElementById("engineSound");
+/* PLAYER */
+const player=document.getElementById("player");
+player.style.backgroundImage="url('cars/player_red.png')";
 
+/* START */
 function startGame(){
-  menuMusic.play();        // allowed after click
+  document.getElementById("menu").classList.remove("active");
+  document.getElementById("game").classList.add("active");
   engineSound.play();
-  show("game");
   run=true;
-  score=0;hp=100;wanted=0;
-  player.style.backgroundImage="url('cars/player_red.png')";
   generateMission();
-  setInterval(spawnNPC,1500);
-  setInterval(spawnHuman,2500);
+  setInterval(spawnNPC,1400);
+  setInterval(spawnHuman,2200);
   setInterval(spawnPolice,4000);
   loop();
 }
 
 /* MISSIONS */
 function generateMission(){
-  const list=[
-    "Drive 500m",
-    "Avoid civilians",
-    "Survive police chase"
-  ];
+  let list=["Drive 500m","Avoid civilians","Survive police"];
   missionText=list[Math.floor(Math.random()*list.length)];
   mission.textContent="Mission: "+missionText;
 }
 
 /* CONTROLS */
-function move(v){x+=v}
-function useNitro(){nitroSound.play()}
+leftBtn.onpointerdown=()=>move(-18);
+rightBtn.onpointerdown=()=>move(18);
+nitro.onpointerdown=()=>nitroSound.play();
+
+function move(v){
+  x+=v;
+  if(x<roadLeft)x=roadLeft;
+  if(x>roadRight)x=roadRight;
+}
 
 /* SPAWNS */
 function spawnNPC(){
   let c=document.createElement("div");
   c.className="car";
   c.style.backgroundImage="url('cars/npc_car.png')";
-  c.style.left=30+Math.random()*40+"%";
+  c.style.left=roadLeft+Math.random()*(roadRight-roadLeft)+"px";
   c.style.top="-100px";
-  game.appendChild(c);
+  world.appendChild(c);
   npcs.push(c);
 }
+
 function spawnHuman(){
   let h=document.createElement("div");
   h.className="human";
-  h.style.left=Math.random()<.5?"12%":"85%";
-  h.style.top=window.innerHeight+"px";
-  game.appendChild(h);
+  h.style.left=Math.random()<.5?"20px":"300px";
+  h.style.top="100%";
+  world.appendChild(h);
   humans.push(h);
 }
+
 function spawnPolice(){
   if(wanted<1)return;
   let p=document.createElement("div");
   p.className="car";
   p.style.backgroundImage="url('cars/police.png')";
-  p.style.top="-150px";
-  p.style.left="50%";
-  game.appendChild(p);
+  p.style.left=roadLeft+80+"px";
+  p.style.top="-140px";
+  world.appendChild(p);
   police.push(p);
 }
 
@@ -244,8 +274,7 @@ function spawnPolice(){
 function hit(a,b){
   let r1=a.getBoundingClientRect();
   let r2=b.getBoundingClientRect();
-  return !(r1.bottom<r2.top||r1.top>r2.bottom||
-           r1.right<r2.left||r1.left>r2.right);
+  return !(r1.bottom<r2.top||r1.top>r2.bottom||r1.right<r2.left||r1.left>r2.right);
 }
 
 /* LOOP */
@@ -258,59 +287,44 @@ function loop(){
 
   npcs.forEach((c,i)=>{
     c.style.top=c.offsetTop+4+"px";
-    if(hit(player,c)){damage(10);addWanted();c.remove();npcs.splice(i,1)}
+    if(hit(player,c)){damage(10);wantedUp();c.remove();npcs.splice(i,1)}
   });
 
   humans.forEach((h,i)=>{
     h.style.top=h.offsetTop-2+"px";
-    if(hit(player,h)){damage(15);addWanted();h.remove();humans.splice(i,1)}
+    if(hit(player,h)){damage(15);wantedUp();h.remove();humans.splice(i,1)}
   });
 
-  police.forEach((p,i)=>{
+  police.forEach(p=>{
     p.style.top=p.offsetTop+(6+wanted)+"px";
     p.style.left=p.offsetLeft+(x-p.offsetLeft)*0.05+"px";
     if(hit(player,p))damage(20);
   });
 
-  hpEl.textContent=hp;
-  coinsEl.textContent=coins;
+  hp.textContent=hp;
+  coins.textContent=coins;
   wantedEl.textContent="★★★★★☆☆☆☆☆".slice(5-wanted,10-wanted);
 
   requestAnimationFrame(loop);
 }
 
-/* DAMAGE / WANTED */
+/* DAMAGE */
 function damage(d){
   crashSound.play();
   hp-=d;
-  if(hp<=0)gameOver();
+  if(hp<=0)endGame();
 }
-function addWanted(){
-  if(wanted<5)wanted++;
-}
+function wantedUp(){if(wanted<5)wanted++}
 
-/* GAME OVER */
-function gameOver(){
+/* END */
+function endGame(){
   run=false;
-  engineSound.pause();
   localStorage.setItem("mafiaSave",JSON.stringify({
     coins,
     best:Math.max(best,score),
     mission:missionText
   }));
   location.reload();
-}
-
-/* PAUSE */
-function togglePause(){
-  paused=!paused;
-  paused?engineSound.pause():engineSound.play();
-}
-
-/* SCREEN */
-function show(id){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
 }
 </script>
 
