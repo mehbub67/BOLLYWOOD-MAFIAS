@@ -61,20 +61,14 @@ body{background:#000;color:#fff;overflow:hidden}
 }
 
 /* CITY SIDES */
-.city{
-  position:absolute;
-  top:0;
-  width:80px;
-  height:100%;
-}
+.city{position:absolute;top:0;width:80px;height:100%}
 #leftCity{left:0}
 #rightCity{right:0}
 
 /* BUILDINGS */
 .building{
   position:absolute;
-  width:80px;
-  height:120px;
+  width:80px;height:120px;
   background-size:cover;
   z-index:1;
 }
@@ -82,20 +76,20 @@ body{background:#000;color:#fff;overflow:hidden}
 /* CARS */
 .car{
   position:absolute;
-  width:48px;
-  height:90px;
+  width:48px;height:90px;
   background-size:contain;
   background-repeat:no-repeat;
   z-index:5;
 }
 
-/* NPC HUMAN SPRITE */
+/* NPC HUMAN */
 .human{
   position:absolute;
   width:32px;
   height:48px;
-  background:url('sprites/npc/npc_topdown_walk.png') 0 0 no-repeat;
-  background-size:128px 48px;
+  background-image:url('sprites/npc/npc_topdown_walk.png');
+  background-repeat:no-repeat;
+  background-size:128px 192px; /* 4x4 grid */
   z-index:3;
 }
 
@@ -145,7 +139,6 @@ body{background:#000;color:#fff;overflow:hidden}
   align-items:center;
   justify-content:center;
   font-size:24px;
-  user-select:none;
 }
 #nitro{background:radial-gradient(circle,#ffd700,#b8860b);color:#000}
 </style>
@@ -164,7 +157,6 @@ body{background:#000;color:#fff;overflow:hidden}
   <div class="menu-box">
     <h1>BOLLYWOOD MAFIA</h1>
     <p>Coins: <span id="mCoins">0</span></p>
-    <p>Level: <span id="mLevel">1</span></p>
     <button class="menu-btn" onclick="startGame()">START</button>
   </div>
 </div>
@@ -184,7 +176,7 @@ body{background:#000;color:#fff;overflow:hidden}
     <div>Coins: <span id="coins">0</span></div>
   </div>
 
-  <div id="mission"></div>
+  <div id="mission">Mission: Drive 500m</div>
 
   <div id="controls">
     <div class="ctrl" id="leftBtn">◀</div>
@@ -194,27 +186,14 @@ body{background:#000;color:#fff;overflow:hidden}
 </div>
 
 <script>
-/* SAVE */
-let save=JSON.parse(localStorage.getItem("mafiaSave")||"{}");
-let coins=save.coins||0;
-let level=save.level||1;
+let coins=0,hp=100,wanted=0;
+let speed=4,dir=0;
+let x=160;
+let frame=0,frameTick=0;
 
-/* STATE */
-let roadLanes=[
-  80+20,
-  80+80,
-  80+140
-];
-let x=roadLanes[1], moveDir=0;
-let hp=100,wanted=0,score=0,speed=4;
-let npcs=[],humans=[],police=[],buildings=[];
-let frameTimer=0;
-
-/* PLAYER */
+const lanes=[100,160,220];
 player.style.backgroundImage="url('cars/player_red.png')";
 player.style.left=x+"px";
-mCoins.textContent=coins;
-mLevel.textContent=level;
 
 /* START */
 function startGame(){
@@ -222,59 +201,41 @@ function startGame(){
   game.classList.add("active");
   menuMusic.play();
   engineSound.play();
-  mission.textContent="Mission: Drive 500m";
-
-  setInterval(spawnNPC,1200);
-  setInterval(spawnHuman,1800);
-  setInterval(spawnBuilding,1500);
+  setInterval(spawnHuman,2000);
+  setInterval(spawnNPC,1600);
   setInterval(spawnPolice,3500);
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 
 /* CONTROLS */
-leftBtn.ontouchstart=()=>moveDir=-1;
-rightBtn.ontouchstart=()=>moveDir=1;
-leftBtn.ontouchend=rightBtn.ontouchend=()=>moveDir=0;
-nitro.ontouchstart=()=>{speed=8;nitroSound.play()}
+leftBtn.ontouchstart=()=>dir=-1;
+rightBtn.ontouchstart=()=>dir=1;
+leftBtn.ontouchend=rightBtn.ontouchend=()=>dir=0;
+nitro.ontouchstart=()=>{speed=7;nitroSound.play()}
 nitro.ontouchend=()=>speed=4;
 
-/* BUILDINGS */
-const buildingImgs=[
-  "city/building_1.png",
-  "city/building_2.png",
-  "city/shop.png",
-  "city/house.png"
-];
-function spawnBuilding(){
-  let b=document.createElement("div");
-  b.className="building";
-  b.style.backgroundImage=`url('${buildingImgs[Math.floor(Math.random()*buildingImgs.length)]}')`;
-  b.style.left=Math.random()<.5?"0px":"280px";
-  b.style.top="-140px";
-  world.appendChild(b);
-  buildings.push(b);
-}
-
-/* NPC CARS */
-function spawnNPC(){
-  let c=document.createElement("div");
-  c.className="car";
-  c.style.backgroundImage="url('cars/npc_car.png')";
-  c.style.left=roadLanes[Math.floor(Math.random()*roadLanes.length)]+"px";
-  c.style.top="-120px";
-  world.appendChild(c);
-  npcs.push(c);
-}
-
-/* NPC HUMANS */
+/* NPC HUMAN */
+const humans=[];
 function spawnHuman(){
   let h=document.createElement("div");
   h.className="human";
   h.style.left=Math.random()<.5?"20px":"300px";
-  h.style.top="100%";
+  h.style.top="-50px";
   h.dataset.frame=0;
   world.appendChild(h);
   humans.push(h);
+}
+
+/* NPC CARS */
+const npcs=[],police=[];
+function spawnNPC(){
+  let c=document.createElement("div");
+  c.className="car";
+  c.style.backgroundImage="url('cars/npc_car.png')";
+  c.style.left=lanes[Math.floor(Math.random()*3)]+"px";
+  c.style.top="-120px";
+  world.appendChild(c);
+  npcs.push(c);
 }
 
 /* POLICE */
@@ -283,64 +244,39 @@ function spawnPolice(){
   let p=document.createElement("div");
   p.className="car";
   p.style.backgroundImage="url('cars/police.png')";
-  p.style.left=roadLanes[Math.floor(Math.random()*roadLanes.length)]+"px";
+  p.style.left=lanes[Math.floor(Math.random()*3)]+"px";
   p.style.top="-180px";
   world.appendChild(p);
   police.push(p);
 }
 
-/* COLLISION */
-function hit(a,b){
-  let r1=a.getBoundingClientRect();
-  let r2=b.getBoundingClientRect();
-  return !(r1.bottom<r2.top||r1.top>r2.bottom||
-           r1.right<r2.left||r1.left>r2.right);
-}
-
 /* LOOP */
-function gameLoop(){
-  x+=moveDir*speed;
-  if(x<roadLanes[0])x=roadLanes[0];
-  if(x>roadLanes[2])x=roadLanes[2];
+function loop(){
+  x+=dir*speed;
+  if(x<lanes[0])x=lanes[0];
+  if(x>lanes[2])x=lanes[2];
   player.style.left=x+"px";
 
-  score++;
-  if(score%60===0)coins++;
+  frameTick++;
+  if(frameTick%8===0)frame=(frame+1)%4;
 
-  frameTimer++;
-  let animateNPC = frameTimer % 8 === 0;
-
-  buildings.forEach((b,i)=>{
-    b.style.top=b.offsetTop+(3+level)+"px";
-    if(b.offsetTop>window.innerHeight){b.remove();buildings.splice(i,1)}
+  humans.forEach((h,i)=>{
+    h.style.top=h.offsetTop+1+"px";
+    h.style.backgroundPosition=`-${frame*32}px 0px`; // DOWN row
+    if(h.offsetTop>window.innerHeight){h.remove();humans.splice(i,1)}
   });
 
   npcs.forEach((c,i)=>{
-    c.style.top=c.offsetTop+(3+level)+"px";
-    if(hit(player,c)){crashSound.play();wanted++;c.remove();npcs.splice(i,1)}
-  });
-
-  humans.forEach((h,i)=>{
-    if(animateNPC){
-      let f=(+h.dataset.frame+1)%4;
-      h.dataset.frame=f;
-      h.style.backgroundPosition=`-${f*32}px 0`;
-    }
-    h.style.top=h.offsetTop-1+"px";
-    if(hit(player,h)){crashSound.play();wanted++;h.remove();humans.splice(i,1)}
+    c.style.top=c.offsetTop+4+"px";
+    if(c.offsetTop>window.innerHeight){c.remove();npcs.splice(i,1)}
   });
 
   police.forEach(p=>{
-    p.style.top=p.offsetTop+(4+level)+"px";
-    p.style.left=p.offsetLeft+(x-p.offsetLeft)*0.05+"px";
-    if(hit(player,p))hp-=1;
+    p.style.top=p.offsetTop+5+"px";
+    p.style.left=p.offsetLeft+(x-p.offsetLeft)*0.04+"px";
   });
 
-  hp.textContent=hp;
-  coins.textContent=coins;
-  wanted.textContent="★★★★★☆☆☆☆☆".slice(5-wanted,10-wanted);
-
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 </script>
 
