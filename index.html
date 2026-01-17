@@ -62,25 +62,19 @@ body{background:#000;color:#fff;overflow:hidden}
 
 /* CITY SIDES */
 .city{position:absolute;top:0;width:80px;height:100%}
-#leftCity{left:0}
-#rightCity{right:0}
-
-/* BUILDINGS */
-.building{
-  position:absolute;
-  width:80px;height:120px;
-  background-size:cover;
-  z-index:1;
-}
 
 /* CARS */
 .car{
   position:absolute;
-  width:48px;height:90px;
+  width:48px;
+  height:90px;
   background-size:contain;
   background-repeat:no-repeat;
   z-index:5;
 }
+
+/* PLAYER */
+#player{bottom:120px;z-index:6}
 
 /* NPC HUMAN */
 .human{
@@ -89,12 +83,10 @@ body{background:#000;color:#fff;overflow:hidden}
   height:48px;
   background-image:url('sprites/npc/npc_topdown_walk.png');
   background-repeat:no-repeat;
-  background-size:128px 192px; /* 4x4 grid */
+  background-size:400% 400%; /* IMPORTANT FIX */
+  image-rendering:pixelated;
   z-index:3;
 }
-
-/* PLAYER */
-#player{bottom:120px;z-index:6}
 
 /* HUD */
 #hud{
@@ -164,8 +156,6 @@ body{background:#000;color:#fff;overflow:hidden}
 <!-- GAME -->
 <div id="game" class="screen">
   <div id="world">
-    <div id="leftCity" class="city"></div>
-    <div id="rightCity" class="city"></div>
     <div id="road"></div>
     <div id="player" class="car"></div>
   </div>
@@ -189,7 +179,7 @@ body{background:#000;color:#fff;overflow:hidden}
 let coins=0,hp=100,wanted=0;
 let speed=4,dir=0;
 let x=160;
-let frame=0,frameTick=0;
+let frame=0,frameTimer=0;
 
 const lanes=[100,160,220];
 player.style.backgroundImage="url('cars/player_red.png')";
@@ -201,9 +191,8 @@ function startGame(){
   game.classList.add("active");
   menuMusic.play();
   engineSound.play();
-  setInterval(spawnHuman,2000);
+  setInterval(spawnHuman,2200);
   setInterval(spawnNPC,1600);
-  setInterval(spawnPolice,3500);
   requestAnimationFrame(loop);
 }
 
@@ -214,20 +203,20 @@ leftBtn.ontouchend=rightBtn.ontouchend=()=>dir=0;
 nitro.ontouchstart=()=>{speed=7;nitroSound.play()}
 nitro.ontouchend=()=>speed=4;
 
-/* NPC HUMAN */
+/* HUMANS */
 const humans=[];
 function spawnHuman(){
   let h=document.createElement("div");
   h.className="human";
   h.style.left=Math.random()<.5?"20px":"300px";
-  h.style.top="-50px";
+  h.style.top="-60px";
   h.dataset.frame=0;
   world.appendChild(h);
   humans.push(h);
 }
 
 /* NPC CARS */
-const npcs=[],police=[];
+const npcs=[];
 function spawnNPC(){
   let c=document.createElement("div");
   c.className="car";
@@ -238,18 +227,6 @@ function spawnNPC(){
   npcs.push(c);
 }
 
-/* POLICE */
-function spawnPolice(){
-  if(wanted<1)return;
-  let p=document.createElement("div");
-  p.className="car";
-  p.style.backgroundImage="url('cars/police.png')";
-  p.style.left=lanes[Math.floor(Math.random()*3)]+"px";
-  p.style.top="-180px";
-  world.appendChild(p);
-  police.push(p);
-}
-
 /* LOOP */
 function loop(){
   x+=dir*speed;
@@ -257,23 +234,25 @@ function loop(){
   if(x>lanes[2])x=lanes[2];
   player.style.left=x+"px";
 
-  frameTick++;
-  if(frameTick%8===0)frame=(frame+1)%4;
+  frameTimer++;
+  if(frameTimer>10){
+    frame=(frame+1)%4;
+    frameTimer=0;
+  }
 
   humans.forEach((h,i)=>{
-    h.style.top=h.offsetTop+1+"px";
-    h.style.backgroundPosition=`-${frame*32}px 0px`; // DOWN row
-    if(h.offsetTop>window.innerHeight){h.remove();humans.splice(i,1)}
+    h.style.top=h.offsetTop+1.2+"px";
+    h.style.backgroundPosition = `-${frame*100}% 0%`; // DOWN row ONLY
+    if(h.offsetTop>window.innerHeight){
+      h.remove(); humans.splice(i,1);
+    }
   });
 
   npcs.forEach((c,i)=>{
     c.style.top=c.offsetTop+4+"px";
-    if(c.offsetTop>window.innerHeight){c.remove();npcs.splice(i,1)}
-  });
-
-  police.forEach(p=>{
-    p.style.top=p.offsetTop+5+"px";
-    p.style.left=p.offsetLeft+(x-p.offsetLeft)*0.04+"px";
+    if(c.offsetTop>window.innerHeight){
+      c.remove(); npcs.splice(i,1);
+    }
   });
 
   requestAnimationFrame(loop);
