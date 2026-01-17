@@ -76,6 +76,7 @@ body{background:#000;color:#fff;overflow:hidden}
   width:80px;
   height:120px;
   background-size:cover;
+  z-index:1;
 }
 
 /* CARS */
@@ -85,19 +86,21 @@ body{background:#000;color:#fff;overflow:hidden}
   height:90px;
   background-size:contain;
   background-repeat:no-repeat;
+  z-index:5;
 }
 
-/* NPC HUMAN (SPRITE) */
+/* NPC HUMAN SPRITE */
 .human{
   position:absolute;
   width:32px;
   height:48px;
   background:url('sprites/npc/npc_topdown_walk.png') 0 0 no-repeat;
-  background-size:128px 48px; /* 4 frames */
+  background-size:128px 48px;
+  z-index:3;
 }
 
 /* PLAYER */
-#player{bottom:120px}
+#player{bottom:120px;z-index:6}
 
 /* HUD */
 #hud{
@@ -106,6 +109,7 @@ body{background:#000;color:#fff;overflow:hidden}
   display:flex;
   justify-content:space-between;
   font-size:14px;
+  z-index:10;
 }
 #wanted{color:gold}
 
@@ -119,6 +123,7 @@ body{background:#000;color:#fff;overflow:hidden}
   padding:6px 12px;
   border-radius:8px;
   font-size:13px;
+  z-index:10;
 }
 
 /* CONTROLS */
@@ -130,6 +135,7 @@ body{background:#000;color:#fff;overflow:hidden}
   justify-content:space-around;
   align-items:center;
   background:linear-gradient(#222,#000);
+  z-index:10;
 }
 .ctrl{
   width:72px;height:72px;
@@ -194,13 +200,19 @@ let coins=save.coins||0;
 let level=save.level||1;
 
 /* STATE */
-let roadLeft=80, roadRight=80+200-48;
-let x=roadLeft+80, moveDir=0;
+let roadLanes=[
+  80+20,
+  80+80,
+  80+140
+];
+let x=roadLanes[1], moveDir=0;
 let hp=100,wanted=0,score=0,speed=4;
 let npcs=[],humans=[],police=[],buildings=[];
+let frameTimer=0;
 
 /* PLAYER */
 player.style.backgroundImage="url('cars/player_red.png')";
+player.style.left=x+"px";
 mCoins.textContent=coins;
 mLevel.textContent=level;
 
@@ -215,8 +227,8 @@ function startGame(){
   setInterval(spawnNPC,1200);
   setInterval(spawnHuman,1800);
   setInterval(spawnBuilding,1500);
-  setInterval(spawnPolice,3000);
-  setInterval(gameLoop,16);
+  setInterval(spawnPolice,3500);
+  requestAnimationFrame(gameLoop);
 }
 
 /* CONTROLS */
@@ -248,13 +260,13 @@ function spawnNPC(){
   let c=document.createElement("div");
   c.className="car";
   c.style.backgroundImage="url('cars/npc_car.png')";
-  c.style.left=roadLeft+Math.random()*(roadRight-roadLeft)+"px";
+  c.style.left=roadLanes[Math.floor(Math.random()*roadLanes.length)]+"px";
   c.style.top="-120px";
   world.appendChild(c);
   npcs.push(c);
 }
 
-/* NPC HUMANS (SPRITE) */
+/* NPC HUMANS */
 function spawnHuman(){
   let h=document.createElement("div");
   h.className="human";
@@ -271,8 +283,8 @@ function spawnPolice(){
   let p=document.createElement("div");
   p.className="car";
   p.style.backgroundImage="url('cars/police.png')";
-  p.style.left=roadLeft+80+"px";
-  p.style.top="-150px";
+  p.style.left=roadLanes[Math.floor(Math.random()*roadLanes.length)]+"px";
+  p.style.top="-180px";
   world.appendChild(p);
   police.push(p);
 }
@@ -288,12 +300,15 @@ function hit(a,b){
 /* LOOP */
 function gameLoop(){
   x+=moveDir*speed;
-  if(x<roadLeft)x=roadLeft;
-  if(x>roadRight)x=roadRight;
+  if(x<roadLanes[0])x=roadLanes[0];
+  if(x>roadLanes[2])x=roadLanes[2];
   player.style.left=x+"px";
 
   score++;
   if(score%60===0)coins++;
+
+  frameTimer++;
+  let animateNPC = frameTimer % 8 === 0;
 
   buildings.forEach((b,i)=>{
     b.style.top=b.offsetTop+(3+level)+"px";
@@ -306,22 +321,26 @@ function gameLoop(){
   });
 
   humans.forEach((h,i)=>{
-    let f=(+h.dataset.frame+1)%4;
-    h.dataset.frame=f;
-    h.style.backgroundPosition=`-${f*32}px 0`;
+    if(animateNPC){
+      let f=(+h.dataset.frame+1)%4;
+      h.dataset.frame=f;
+      h.style.backgroundPosition=`-${f*32}px 0`;
+    }
     h.style.top=h.offsetTop-1+"px";
     if(hit(player,h)){crashSound.play();wanted++;h.remove();humans.splice(i,1)}
   });
 
   police.forEach(p=>{
     p.style.top=p.offsetTop+(4+level)+"px";
-    p.style.left=p.offsetLeft+(x-p.offsetLeft)*0.06+"px";
+    p.style.left=p.offsetLeft+(x-p.offsetLeft)*0.05+"px";
     if(hit(player,p))hp-=1;
   });
 
   hp.textContent=hp;
   coins.textContent=coins;
   wanted.textContent="★★★★★☆☆☆☆☆".slice(5-wanted,10-wanted);
+
+  requestAnimationFrame(gameLoop);
 }
 </script>
 
